@@ -29,7 +29,6 @@ namespace osu.Game.Overlays.Toolbar
 
             Add(countDisplay = new CountCircle
             {
-                Alpha = 0,
                 Height = 16,
                 RelativePositionAxes = Axes.Both,
                 Origin = Anchor.Centre,
@@ -47,13 +46,8 @@ namespace osu.Game.Overlays.Toolbar
 
             NotificationCount.ValueChanged += count =>
             {
-                if (count == 0)
-                    countDisplay.FadeOut(200, Easing.OutQuint);
-                else
-                {
-                    countDisplay.Count = count;
-                    countDisplay.FadeIn(200, Easing.OutQuint);
-                }
+                countDisplay.FadeTo(count == 0 ? 0 : 1, 200, Easing.OutQuint);
+                countDisplay.Count = count;
             };
         }
 
@@ -61,6 +55,9 @@ namespace osu.Game.Overlays.Toolbar
         {
             private readonly OsuSpriteText countText;
             private readonly Circle circle;
+            private readonly Circle expandCircle;
+
+            private readonly Container elasticContainer;
 
             private int count;
 
@@ -75,11 +72,16 @@ namespace osu.Game.Overlays.Toolbar
                     if (value > count)
                     {
                         circle.FlashColour(Color4.White, 600, Easing.OutQuint);
-                        this.ScaleTo(1.1f).Then().ScaleTo(1, 600, Easing.OutElastic);
+
+                        if (count == 0 && expandCircle.Alpha < 0.1f)
+                            expandCircle.FadeTo(0.8f).ScaleTo(1).Then().ScaleTo(50, 500).FadeOut(300);
+
+                        elasticContainer.ScaleTo(1.1f).Then().ScaleTo(1, 600, Easing.OutElastic);
                     }
 
                     count = value;
-                    countText.Text = value.ToString("#,0");
+                    if (count > 0)
+                        countText.Text = value.ToString("#,0");
                 }
             }
 
@@ -89,21 +91,43 @@ namespace osu.Game.Overlays.Toolbar
 
                 InternalChildren = new Drawable[]
                 {
-                    circle = new Circle
+                    expandCircle = new Circle
                     {
+                        Alpha = 0,
+                        Anchor = Anchor.Centre,
+                        Origin = Anchor.Centre,
+                        BypassAutoSizeAxes = Axes.Both,
                         RelativeSizeAxes = Axes.Both,
                         Colour = Color4.Red
                     },
-                    countText = new OsuSpriteText
+                    elasticContainer = new Container
                     {
                         Anchor = Anchor.Centre,
                         Origin = Anchor.Centre,
-                        Y = -1,
-                        TextSize = 14,
-                        Padding = new MarginPadding(5),
-                        Colour = Color4.White,
-                        UseFullGlyphHeight = true,
-                        Font = "Exo2.0-Bold",
+                        AutoSizeAxes = Axes.X,
+                        RelativeSizeAxes = Axes.Y,
+                        Children = new Drawable[]
+                        {
+                            circle = new Circle
+                            {
+                                Blending = BlendingMode.Additive,
+                                Anchor = Anchor.Centre,
+                                Origin = Anchor.Centre,
+                                RelativeSizeAxes = Axes.Both,
+                                Colour = Color4.Red
+                            },
+                            countText = new OsuSpriteText
+                            {
+                                Anchor = Anchor.Centre,
+                                Origin = Anchor.Centre,
+                                Y = -1,
+                                TextSize = 14,
+                                Padding = new MarginPadding(5),
+                                Colour = Color4.White,
+                                UseFullGlyphHeight = true,
+                                Font = "Exo2.0-Bold",
+                            }
+                        }
                     }
                 };
             }
